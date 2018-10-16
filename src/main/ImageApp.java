@@ -1,10 +1,8 @@
 package main;
 
 import java.awt.FlowLayout;
-import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -19,28 +17,27 @@ import javax.swing.JTextField;
 
 public class ImageApp extends JApplet {
 
-	BufferedImage imgSource;
-	BufferedImage imgTarget;
+	BufferedImage imgSource, imgTarget;
 
 	String fileSaveName;
 
-	JFrame frameMenu;
-	JFrame frameImgSource;
-	JFrame frameImgTarget;
+	JFrame frameMenu, frameImgSource, frameImgTarget;
+	JLabel labelFileSaveNameMessage, labelImgGain, labelImgBias;
+	
+	JButton btnCopy, btnSave, btnFlipH, btnFlipV, btnQuit, btnContrast, btnBrightness;
+	JButton btnGaussian, btnLaplacian, btnHighPass, btnPrewittX, btnPrewittY, btnGrayScale;
+	JButton btnSobelX, btnSobelY, btnRotateCCW,btnRotateCW,btnHistogram,btnZoomIn;
+	
+	JTextField textFieldFileSaveName, textFieldImgGain, textFieldImgBias;
 
-	JLabel labelFileSaveNameMessage;
+	private JButton btnNegative;
 
-	JTextField textfieldFileSaveName;
 
-	JButton btnCopy;
-	JButton btnSave;
-	JButton btnFlipH;
-	JButton btnFlipV;
-	JButton btnQuit;
-
+	
+	
 	private static final long serialVersionUID = 1L;
 
-	// Reads image either from args[0] or default cameraman.jpg
+	// Creates a frame for the source image
 	private void frameSourceCreate(ImageIcon icon, JFrame frame) {
 		frame.setLayout(new FlowLayout());
 		frame.setSize(icon.getIconWidth() + 25, icon.getIconHeight() + 45);
@@ -51,15 +48,19 @@ public class ImageApp extends JApplet {
 		frame.add(label);
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setLocation(300, 0);
 	}
-	
+
+	// Recreates the image frame for target image
 	private void frameTargetCreate(ImageIcon icon) {
-		frameImgTarget.setVisible(false); // hide window
-		frameImgTarget.removeAll(); // close window
-		//frameImgTarget.dispatchEvent(new WindowEvent(frameImgTarget, WindowEvent.WINDOW_CLOSING));
+		// hide window
+		frameImgTarget.setVisible(false);
 
+		// close window
+		frameImgTarget.removeAll();
 
-		//frame.dispose();
+		// Create a new frame
+		// frameImgTarget.setLocation(500, 500);
 		frameImgTarget = new JFrame("Target Image");
 		frameImgTarget.setLayout(new FlowLayout());
 		frameImgTarget.setSize(icon.getIconWidth() + 25, icon.getIconHeight() + 45);
@@ -71,27 +72,30 @@ public class ImageApp extends JApplet {
 		frameImgTarget.setVisible(true);
 		frameImgTarget.setLocationRelativeTo(frameImgSource);
 		frameImgTarget.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frameImgTarget.setLocation(325 + imgSource.getWidth(), 0);
 	}
-	
-	
+
+	// Reads image from args[0] or from default image cameraman.jpg
 	private void imgFileRead(String[] args) {
 		if (args.length != 0) {
 			try {
-				this.imgSource = ImageIO.read(new File(args[0]));
+				imgSource = ImageIO.read(new File(args[0]));
+				imgTarget = ImageIO.read(new File(args[0]));
+
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		} else {
 			try {
-				this.imgSource = ImageIO.read(getClass().getResource("cameraman.jpg"));
-
+				imgSource = ImageIO.read(getClass().getResource("bird.jpg"));
+				imgTarget = ImageIO.read(getClass().getResource("bird.jpg"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		;
 	}
 
+	// Saves image to <fileSaveName>.jpg
 	private void imgFileSave(BufferedImage image, String fileSaveName) {
 		try {
 			File outputFile = new File(fileSaveName + ".jpg");
@@ -101,111 +105,151 @@ public class ImageApp extends JApplet {
 		}
 	}
 
-	
-	private BufferedImage imgFlipHorizontal(BufferedImage image) {
-		int imgWidth = image.getWidth();
-		int imgHeight = image.getHeight();
-		int imgType = image.getType();
-
-		BufferedImage newImage = new BufferedImage(imgWidth, imgHeight, imgType);
-		Graphics2D graphics = newImage.createGraphics();
-
-		// graphics.drawImage(image, 0, 0, imgWidth, imgHeight, imgWidth, 0, 0,
-		// imgHeight, null);
-		graphics.drawImage(image, image.getWidth(), 0, -image.getWidth(), image.getHeight(), null);
-		graphics.dispose();
-
-		return newImage;
-	}
-
-	private BufferedImage imgFlipVertical(BufferedImage image) {
-		int imgWidth = image.getWidth();
-		int imgHeight = image.getHeight();
-		int imgType = image.getType();
-
-		BufferedImage newImage = new BufferedImage(imgWidth, imgHeight, imgType);
-
-		Graphics2D graphics = newImage.createGraphics();
-		graphics.drawImage(image, 0, imgHeight, imgWidth, -imgHeight, null);
-		graphics.dispose();
-
-		return newImage;
-	}
-
-	public BufferedImage imgRotate(BufferedImage image, int angle) {
-		int imgWidth = image.getWidth();
-		int imgHeight = image.getHeight();
-		int imgType = image.getType();
-
-		BufferedImage newImage = new BufferedImage(imgWidth, imgHeight, imgType);
-		Graphics2D graphics = newImage.createGraphics();
-		graphics.rotate(Math.toRadians(angle), imgWidth / 2, imgHeight / 2);
-		graphics.drawImage(image, null, 0, 0);
-		return newImage;
-	}
-
-	private void imgExtractPixels(int[][] imgPixels, BufferedImage image) {
-		for (int i = 0; i < image.getWidth(); i++) {
-			for (int j = 0; j < image.getHeight(); j++) {
-				imgPixels[i][j] = image.getRGB(i, j);
-			}
-		}
-	}
-
-	private BufferedImage imgReplacePixels(BufferedImage image, int[][] imgPixels) {
-		for (int i = 0; i < image.getWidth(); i++) {
-			for (int j = 0; j < image.getHeight(); j++) {
-				image.setRGB(i, j, imgPixels[i][j]);
-			}
-		}
-		return image;
-	}
-
-	
 	public ImageApp() {
+		// Menu frame creation
 		frameMenu = new JFrame("Menu");
 		frameImgSource = new JFrame("Source Image");
 		frameImgTarget = new JFrame("Target Image");
 
+		// File save name label
 		labelFileSaveNameMessage = new JLabel();
-		labelFileSaveNameMessage.setText("File Save Name: ");
+		labelFileSaveNameMessage.setText("Save Name: ");
 		labelFileSaveNameMessage.setBounds(10, 15, 100, 10);
 		frameMenu.add(labelFileSaveNameMessage);
 
-		textfieldFileSaveName = new JTextField();
-		textfieldFileSaveName.setBounds(120, 10, 200, 20);
-		frameMenu.add(textfieldFileSaveName);
+		// File save name textfield
+		textFieldFileSaveName = new JTextField();
+		textFieldFileSaveName.setBounds(80, 10, 200, 20);
+		frameMenu.add(textFieldFileSaveName);
 
+		// Save image button
 		btnSave = new JButton("Save File");
-		btnSave.setBounds(50, 40, 150, 20);
+		btnSave.setBounds(80, 40, 200, 20);
 		frameMenu.add(btnSave);
 
-		btnCopy = new JButton("Copy");
-		btnCopy.setBounds(50, 80, 150, 20);
+		// Copy/Reset button
+		btnCopy = new JButton("Copy/Reset");
+		btnCopy.setBounds(80, 80, 200, 20);
 		frameMenu.add(btnCopy);
-		
-		btnFlipH = new JButton("Flip Horizontally");
-		btnFlipH.setBounds(50, 110, 150, 20);
+
+		// Horizontal Flip button
+		btnFlipH = new JButton("Flip - Horizontal");
+		btnFlipH.setBounds(80, 110, 200, 20);
 		frameMenu.add(btnFlipH);
 
-		btnFlipV = new JButton("Flip Vertically");
-		btnFlipV.setBounds(50, 140, 150, 20);
+		// Vertical Flip button
+		btnFlipV = new JButton("Flip - Vertical");
+		btnFlipV.setBounds(80, 140, 200, 20);
 		frameMenu.add(btnFlipV);
 
-		btnQuit = new JButton("Quit");
-		btnQuit.setBounds(50, 170, 150, 20);
-		frameMenu.add(btnQuit);
+		// Quit button
+		btnHistogram = new JButton("Histogram");
+		btnHistogram.setBounds(80, 170, 200, 20);
+		frameMenu.add(btnHistogram);
 
-		frameMenu.setSize(400, 250);
+		// Gain label
+		labelImgGain = new JLabel();
+		labelImgGain.setText("Gain: ");
+		labelImgGain.setBounds(10, 205, 100, 10);
+		frameMenu.add(labelImgGain);
+
+		// Gain textfield
+		textFieldImgGain = new JTextField();
+		textFieldImgGain.setBounds(80, 200, 200, 20);
+		frameMenu.add(textFieldImgGain);
+
+		// Contrast button
+		btnContrast = new JButton("Contrast");
+		btnContrast.setBounds(80, 230, 200, 20);
+		frameMenu.add(btnContrast);
+
+		// Bias label
+		labelImgBias = new JLabel();
+		labelImgBias.setText("Bias: ");
+		labelImgBias.setBounds(10, 265, 100, 10);
+		frameMenu.add(labelImgBias);
+
+		// Bias textfield
+		textFieldImgBias = new JTextField();
+		textFieldImgBias.setBounds(80, 260, 200, 20);
+		frameMenu.add(textFieldImgBias);
+
+		// Brightness button
+		btnBrightness = new JButton("Brightness");
+		btnBrightness.setBounds(80, 290, 200, 20);
+		frameMenu.add(btnBrightness);
+
+		// Negative Button
+		btnNegative = new JButton("Negative");
+		btnNegative.setBounds(80, 320, 200, 20);
+		frameMenu.add(btnNegative);
+
+		// Gaussian convolution Button
+		btnGaussian = new JButton("Gaussian");
+		btnGaussian.setBounds(80, 350, 100, 20);
+		frameMenu.add(btnGaussian);
+
+		// Laplacian convolution Button
+		btnLaplacian = new JButton("Laplacian");
+		btnLaplacian.setBounds(180, 350, 100, 20);
+		frameMenu.add(btnLaplacian);
+
+		// High Pass convolution Button
+		btnHighPass = new JButton("High Pass");
+		btnHighPass.setBounds(80, 380, 100, 20);
+		frameMenu.add(btnHighPass);
+
+		// Prewitt X convolution Button
+		btnPrewittX = new JButton("Prewitt X");
+		btnPrewittX.setBounds(80, 410, 100, 20);
+		frameMenu.add(btnPrewittX);
+
+		// Prewitt Y convolution Button
+		btnPrewittY = new JButton("Prewitt Y");
+		btnPrewittY.setBounds(180, 410, 100, 20);
+		frameMenu.add(btnPrewittY);
+		
+		// Sobel X convolution Button
+		btnSobelX = new JButton("Sobel X");
+		btnSobelX.setBounds(80, 440, 100, 20);
+		frameMenu.add(btnSobelX);
+		
+		// Sobel Y convolution Button
+		btnSobelY = new JButton("Sobel Y");
+		btnSobelY.setBounds(180, 440, 100, 20);
+		frameMenu.add(btnSobelY);
+		
+		// Rotate clockwise button
+		btnRotateCW = new JButton("Clockwise");
+		btnRotateCW.setBounds(80, 470, 100, 20);
+		frameMenu.add(btnRotateCW);
+		
+		// Rotate counterclockwise button
+		btnRotateCCW = new JButton("CounterCW");
+		btnRotateCCW.setBounds(180, 470, 100, 20);
+		frameMenu.add(btnRotateCCW);
+		
+		// Zoom in button
+		btnZoomIn = new JButton("Zoom In");
+		btnZoomIn.setBounds(80, 500, 200, 20);
+		frameMenu.add(btnZoomIn);
+		
+		// Grayscale button
+		btnGrayScale = new JButton("Grayscale");
+		btnGrayScale.setBounds(80, 530, 200, 20);
+		frameMenu.add(btnGrayScale);
+		
+		// Frame specifications
+		frameMenu.setSize(300, 600);
 		frameMenu.setLayout(null);
 		frameMenu.setVisible(true);
 		frameMenu.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		
+		// BUTTON BEHAVIOR BELOW
 		btnSave.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
-				if (textfieldFileSaveName.getText().length() > 0) {
-					fileSaveName = textfieldFileSaveName.getText();
+				if (textFieldFileSaveName.getText().length() > 0) {
+					fileSaveName = textFieldFileSaveName.getText();
 					imgFileSave(imgTarget, fileSaveName);
 				} else {
 					imgFileSave(imgTarget, "saved_image");
@@ -220,31 +264,189 @@ public class ImageApp extends JApplet {
 				frameTargetCreate(iconTarget);
 			}
 		});
-				
+
 		btnFlipH.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
-				imgTarget = imgFlipHorizontal(imgSource);
+				imgTarget = ImageHandler.imgFlipHorizontal(imgTarget);
 				ImageIcon iconTarget = new ImageIcon(imgTarget);
 				frameTargetCreate(iconTarget);
 			}
 		});
-		
+
 		btnFlipV.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
-				imgTarget = imgFlipVertical(imgSource);
+				imgTarget = ImageHandler.imgFlipVertical(imgTarget);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+		});
+
+//		btnQuit.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent actionEvent) {
+//				System.out.println("Application closed, goodbye!");
+//				System.exit(0);
+//			}
+//		});
+
+		btnHistogram.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgHistogram(imgSource);
 				ImageIcon iconTarget = new ImageIcon(imgTarget);
 				frameTargetCreate(iconTarget);
 			}
 		});
 		
-		btnQuit.addActionListener(new ActionListener() {
+		btnContrast.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent actionEvent) {
-				System.exit(0);
+				double gain;
+				try {
+					gain = Double.parseDouble(textFieldImgGain.getText());
+				} catch (NumberFormatException e) {
+					gain = 1.0;
+					e.printStackTrace();
+				}
+				imgTarget = ImageHandler.imgContrast(imgTarget, gain);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
 			}
 		});
+		
+		btnBrightness.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent actionEvent) {
+				int bias;
+				try {
+					bias = Integer.parseInt(textFieldImgBias.getText());
+				} catch (NumberFormatException e) {
+					bias = 0;
+					e.printStackTrace();
+				}
+				imgTarget = ImageHandler.imgBrightness(imgTarget, bias);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+		});
+
+		btnNegative.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgNegative(imgTarget);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+
+		btnGaussian.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgConvolution(imgTarget, ImageHandler.KERNEL_GAUSSIAN);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+
+		btnLaplacian.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgConvolution(imgTarget, ImageHandler.KERNEL_LAPLACIAN);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+
+		btnHighPass.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgConvolution(imgTarget, ImageHandler.KERNEL_HIGHPASS);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+
+		btnPrewittX.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgConvolution(imgTarget, ImageHandler.KERNEL_PREWITT_X);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+
+		btnPrewittY.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgConvolution(imgTarget, ImageHandler.KERNEL_PREWITT_Y);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+
+		btnPrewittY.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgConvolution(imgTarget, ImageHandler.KERNEL_PREWITT_Y);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+
+		btnSobelX.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgConvolution(imgTarget, ImageHandler.KERNEL_SOBEL_X);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+
+		btnSobelY.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgConvolution(imgTarget, ImageHandler.KERNEL_SOBEL_Y);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+		
+		btnRotateCW.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgRotateCW(imgTarget);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+		
+		btnRotateCCW.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgRotateCCW(imgTarget);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+		
+		btnZoomIn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgZoomIn(imgTarget);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+		
+		btnGrayScale.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				imgTarget = ImageHandler.imgToGrayscale(imgTarget);
+				ImageIcon iconTarget = new ImageIcon(imgTarget);
+				frameTargetCreate(iconTarget);
+			}
+
+		});
+		
+		
+
 	}
 
-	
 	public static void main(String[] args) {
 		ImageApp imgApp = new ImageApp();
 
@@ -254,8 +456,8 @@ public class ImageApp extends JApplet {
 		imgApp.frameSourceCreate(iconSource, imgApp.frameImgSource);
 
 		// imgApp.imgTarget = imgApp.imgFlipHorizontal(imgApp.imgSource);
-		//ImageIcon iconTarget = new ImageIcon(imgApp.imgTarget);
-		//imgApp.frameCreate(iconTarget, imgApp.frameImgTarget);
+		// ImageIcon iconTarget = new ImageIcon(imgApp.imgTarget);
+		// imgApp.frameCreate(iconTarget, imgApp.frameImgTarget);
 
 		// imgTarget = imgApp.imgFlipHorizontal(imgSource);
 		// imgTarget = imgApp.imgFlipVertical(imgSource);
